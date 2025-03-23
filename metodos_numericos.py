@@ -1,11 +1,9 @@
-import numpy as np  # Para operaciones numéricas y generación de datos
+import numpy as np  # Para operaciones numéricas
 import matplotlib.pyplot as plt  # Para graficar funciones
 import pandas as pd  # Para manejar tablas de iteraciones
-from sympy import symbols, lambdify, sympify  # Para manejar expresiones matemáticas simbólicas
-
+from sympy import symbols, lambdify, diff, solve, sympify  # Para manejo simbólico y cálculo de derivadas
 
 # Método de Bisección para encontrar raíces de funciones
-
 def bisection_method(func, a, b, tol=0.001, max_iter=100):
     iter_data = []  # Lista para almacenar datos de cada iteración
     ea = 100  # Error relativo inicial (alto para asegurar iteración)
@@ -40,7 +38,6 @@ def bisection_method(func, a, b, tol=0.001, max_iter=100):
 
 
 # Método de Falsa Posición
-
 def false_position_method(func, a, b, tol=0.001, max_iter=100):
     iter_data = []
     ea = 100
@@ -71,39 +68,59 @@ def false_position_method(func, a, b, tol=0.001, max_iter=100):
     return xr, iter_data
 
 
-# Método del Punto Fijo
-
+# Método del Punto Fijo corregido
 def fixed_point_method(func, g_func, x0, tol=0.001, max_iter=100):
-    iter_data = []
-    ea = 100
+    iter_data = []  # Datos de iteración
+    ea = 100  # Error relativo inicial alto
     xr = x0  # Punto inicial
 
     for i in range(max_iter):
-        xr_old = xr
-        xr = g_func(xr_old)  # Aplicación de la función g(x)
-        f_xr = func(xr)
+        xr_old = xr  # Guardar valor anterior de xr
+        xr = g_func(xr_old)  # Aplicar g(x)
+        f_xr = func(xr)  # Evaluar f(x) en xr
 
         if i > 0:
-            ea = abs((xr - xr_old) / xr) * 100
+            ea = abs((xr - xr_old) / xr) * 100  # Calcular error relativo
 
-        iter_data.append([i + 1, xr_old, xr, ea, f_xr])
+        iter_data.append([i + 1, xr_old, xr, ea, f_xr])  # Guardar datos de iteración
 
-        if ea < tol:
+        if ea < tol:  # Verificar criterio de convergencia
             break
 
-    return xr, iter_data
+    return xr, iter_data  # Retorna la raíz y los datos de iteración
 
 
-# Función para graficar la función ingresada
+# Método de Newton-Raphson
+def newton_raphson_method(func, func_prime, x0, tol=0.001, max_iter=100):
+    iter_data = []  # Datos de iteración
+    ea = 100  # Error relativo inicial alto
+    xr = x0  # Punto inicial
 
+    for i in range(max_iter):
+        xr_old = xr  # Guardar valor anterior de xr
+        xr = xr_old - func(xr_old) / func_prime(xr_old)  # Fórmula de Newton-Raphson
+        f_xr = func(xr)  # Evaluar f(x) en xr
+
+        if i > 0:
+            ea = abs((xr - xr_old) / xr) * 100  # Calcular error relativo
+
+        iter_data.append([i + 1, xr_old, xr, ea, f_xr])  # Guardar datos de iteración
+
+        if ea < tol:  # Verificar criterio de convergencia
+            break
+
+    return xr, iter_data  # Retorna la raíz y los datos de iteración
+
+
+# Función para graficar f(x) y la raíz
 def plot_function(func, a, b, root):
-    x_vals = np.linspace(a - 1, b + 1, 400)  # Generación de valores x en un rango extendido
-    y_vals = func(x_vals)  # Evaluación de la función en x_vals
+    x_vals = np.linspace(a - 1, b + 1, 400)
+    y_vals = func(x_vals)
 
     plt.figure(figsize=(8, 6))
-    plt.plot(x_vals, y_vals, label='f(x)')  # Graficamos f(x)
-    plt.axhline(0, color='black', linewidth=1)  # Línea horizontal en y=0
-    plt.axvline(root, color='red', linestyle='--', label=f'Raíz en x={root:.4f}')  # Línea vertical en la raíz
+    plt.plot(x_vals, y_vals, label='f(x)')
+    plt.axhline(0, color='black', linewidth=1)
+    plt.axvline(root, color='red', linestyle='--', label=f'Raíz en x={root:.4f}')
     plt.title('Gráfico de la Función')
     plt.xlabel('x')
     plt.ylabel('f(x)')
@@ -113,47 +130,41 @@ def plot_function(func, a, b, root):
 
 
 # Función principal del programa
-
 def main():
     print("Métodos Numéricos:")
     print("1. Método de la Bisección")
     print("2. Método de la Falsa Posición")
     print("3. Método del Punto Fijo")
-    choice = input("Seleccione un método (1, 2, 3): ")
+    print("4. Método de Newton-Raphson")
+    choice = input("Seleccione un método (1, 2, 3, 4): ")
 
-    # Solicitar datos de entrada al usuario
     user_input = input("Ingrese la función en términos de x (ej. x**3 - x - 2): ")
-    a = float(input("Ingrese el valor de a (límite inferior): "))
-    b = float(input("Ingrese el valor de b (límite superior): "))
-    tol = float(input("Ingrese la tolerancia (ej. 0.001): "))
+    x = symbols('x')
+    func_expr = sympify(user_input)
+    func = lambdify(x, func_expr, 'numpy')
+    func_prime = lambdify(x, diff(func_expr, x), 'numpy')
 
-    x = symbols('x')  # Definimos la variable simbólica
-    func_expr = sympify(user_input)  # Convertimos la cadena en una expresión simbólica
-    func = lambdify(x, func_expr, 'numpy')  # Convertimos la expresión en función evaluable
-
-    if choice == '1':
-        root, iter_data = bisection_method(func, a, b, tol)
-    elif choice == '2':
-        root, iter_data = false_position_method(func, a, b, tol)
+    if choice in ['1', '2']:
+        a = float(input("Ingrese el valor de a (límite inferior): "))
+        b = float(input("Ingrese el valor de b (límite superior): "))
+        tol = float(input("Ingrese la tolerancia (ej. 0.001): "))
+        root, iter_data = bisection_method(func, a, b, tol) if choice == '1' else false_position_method(func, a, b, tol)
     elif choice == '3':
-        g_input = input("Ingrese la función g(x) para el punto fijo: ")
-        g_expr = sympify(g_input)
-        g_func = lambdify(x, g_expr, 'numpy')
         x0 = float(input("Ingrese el valor inicial x0: "))
+        tol = float(input("Ingrese la tolerancia (ej. 0.001): "))
+        g_expr = solve(x - func_expr, x)[0]
+        g_func = lambdify(x, g_expr, 'numpy')
         root, iter_data = fixed_point_method(func, g_func, x0, tol)
+    elif choice == '4':
+        x0 = float(input("Ingrese el valor inicial x0: "))
+        tol = float(input("Ingrese la tolerancia (ej. 0.001): "))
+        root, iter_data = newton_raphson_method(func, func_prime, x0, tol)
     else:
         print("Opción no válida")
         return
 
-    # Mostrar la tabla de iteraciones en un DataFrame
-    iter_df = pd.DataFrame(iter_data, columns=['Iteración', 'a', 'b', 'xr', 'ea (%)', 'f(xr)'])
-    print("\nTabla de iteraciones:")
-    print(iter_df)
+    print(pd.DataFrame(iter_data))
+    plot_function(func, x0 - 1, x0 + 1, root)
 
-    # Graficar la función y la raíz encontrada
-    plot_function(func, a, b, root)
-
-
-# Ejecutar el programa si se ejecuta este script directamente
 if __name__ == "__main__":
     main()
